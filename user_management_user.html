@@ -41,6 +41,7 @@
                     <li><a href="user_support.html"><i class='uil uil-users-alt icon'></i>User Support</a></li>
                 </ul>
             </li>
+            <li><a href="terms_and_condition.html"><i class='uil uil-file-alt'></i>Terms and Condition</a></li>
             <li><a href="settings2.html"><i class='bx bxs-cog icon'></i> Settings</a></li>
         </ul>
     </section>
@@ -50,17 +51,18 @@
     <section id="content">
         <nav>
             <i class='bx bx-menu toggle-sidebar'></i>
-            <form action="#">
+            <form action="#" id="search-form">
                 <div class="form-group">
-                    <input type="text" placeholder="Search...">
+                    <input type="text" placeholder="Search..." id="search-input">
                     <i class='bx bx-search icon'></i>
                 </div>
             </form>
+            
             <div class="profile">
                 <img src="images/logo.png" alt="">
                 <ul class="profile-link">
                     <li><a href="/settings"><i class='bx bxs-cog'></i> Settings</a></li>
-                    <li><a href="login.html" class="btn-logout"><i class='bx bxs-log-out-circle'></i> Logout</a></li>
+                    <li><a href="login2.html" class="btn-logout"><i class='bx bxs-log-out-circle'></i> Logout</a></li>
                 </ul>
             </div>
         </nav>
@@ -84,7 +86,38 @@
             </div>
         </main>
     </section>
+    <script>
+     document.getElementById('search-input').addEventListener('input', function(event) {
+    const searchValue = event.target.value.toLowerCase();
     
+    // Get all the rows in the user table
+    const rows = document.querySelectorAll('#user-table-body tr');
+    
+    rows.forEach(row => {
+        const name = row.querySelector('td p').innerText.toLowerCase(); // Name field
+        const email = row.querySelector('.email').innerText.toLowerCase(); // Email field
+        const joinedDate = row.querySelector('td:nth-child(2)').innerText.toLowerCase(); // Joined Date field
+        const gender = row.querySelector('td:nth-child(3)').innerText.toLowerCase(); // Gender field
+        const age = row.querySelector('td:nth-child(4)').innerText.toLowerCase(); // Age field
+        const activeStatus = row.querySelector('td:nth-child(5)').innerText.toLowerCase(); // Active Status field
+        
+        // Check if any of the fields contain the search value
+        if (
+            name.includes(searchValue) ||
+            email.includes(searchValue) ||
+            joinedDate.includes(searchValue) ||
+            age.includes(searchValue) ||
+            activeStatus.includes(searchValue)
+        ) {
+            row.style.display = ''; // Show the row if it matches
+        } else {
+            row.style.display = 'none'; // Hide the row if it doesn't match
+        }
+    });
+});
+
+
+    </script>
     <!-- Firebase Initialization and Data Fetching Script -->
     <script>
 		// Firebase configuration
@@ -142,11 +175,14 @@
 		// Function to fetch users from Firestore
 		function fetchUsers() {
     console.log("Fetching user data...");
-    db.collection("users").get().then((querySnapshot) => {
-        if (querySnapshot.empty) {
-            console.log("No user data found.");
-            return; // Exit if no data
-        }
+    db.collection("users")
+        .orderBy("date_joined", "desc") // Order by 'date_joined' field in descending order
+        .get()
+        .then((querySnapshot) => {
+            if (querySnapshot.empty) {
+                console.log("No user data found.");
+                return; // Exit if no data
+            }
         querySnapshot.forEach((doc) => {
             const userData = doc.data();
             const fullName = `${userData.firstname} ${userData.lastname}`; // Combine first and last name
@@ -160,7 +196,7 @@
                     joinedDate = userData.date_joined; // If it's a string, use it directly
                 }
             }
-			
+            
             const row = `
                 <tr style="width%">
                     <td>
