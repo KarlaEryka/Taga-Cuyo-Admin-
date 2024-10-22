@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="Untitled-1.css">
+    <title>Admin Dashboard</title>
+
+    <!-- Firebase App (compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore SDK (compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand"><img src="images/logo.png" width="70px" height="70px"> TAGA-CUYO</a>
+        <ul class="side-menu">
+            <li><a href="#" class="active"><i class='bx bxs-dashboard icon'></i> Admin Dashboard</a></li>
+            <li class="divider" data-text="main">Main</li>
+            <li>
+                <a href="#"><i class='bx bxs-inbox icon'></i> User Management <i class='bx bx-chevron-right icon-right'></i></a>
+                <ul class="side-dropdown">
+                    <li><a href="user_management_user.html" class="active"><i class='mdi mdi-account icon'></i> List of Users</a></li>
+                    <li><a href="ManageStaff2.html"><i class='uil uil-users-alt icon'></i> Manage Staff</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class='bx bxs-comment icon'></i> Support and Feedback <i class='bx bx-chevron-right icon-right'></i></a>
+                <ul class="side-dropdown">
+                    <li><a href="feedback2.html" class="active"><i class='bx bxs-message-rounded'></i>User Feedback</a></li>
+                    <li><a href="ManageStaff2.html"><i class='uil uil-headphones-alt'></i>User Support</a></li>
+                </ul>
+            </li>
+            <li><a href="settings2.html"><i class='bx bxs-cog icon'></i> Settings</a></li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- NAVBAR -->
+    <section id="content">
+        <nav>
+            <i class='bx bx-menu toggle-sidebar'></i>
+            <form action="#">
+                <div class="form-group">
+                    <input type="text" placeholder="Search...">
+                    <i class='bx bx-search icon'></i>
+                </div>
+            </form>
+            <span class="divider"></span>
+            <div class="profile">
+                <img src="/images/logo.png" alt="Profile Image">
+                <ul class="profile-link">
+                    <li><a href="/profile"><i class='bx bxs-user-circle icon'></i> Profile</a></li>
+                    <li><a href="/settings"><i class='bx bxs-cog'></i> Settings</a></li>
+                    <li><a href="/logout"><i class='bx bxs-log-out-circle'></i> Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+        <main>
+            <div class="dashboard">
+                <div class="stat-card">
+                    <strong id="total-users"></strong>
+                    <p>Total Users</p>
+                </div>
+                <div class="stat-card">
+                    <strong id="active-users"></strong>
+                    <p>Active Users</p>
+                </div>
+                <div class="recent-activity-card">
+                    <h3>Recent User Data</h3>
+                    <div class="user-list-container">
+                        <ul id="user-list" class="user-list">
+                            <!-- User information will be dynamically populated here -->
+                        </ul>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Language Preference</h3>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div class="age-group-card">
+                    <h3>Age Group</h3>
+                    <div class="canvas-container">
+                        <canvas id="doughnutChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Top 10 Most Translated Phrases</h3>
+                    <ol id="translated-phrases-list">
+                        <!-- Top translated phrases will be dynamically populated here -->
+                    </ol>
+                </div>
+                <div class="recent-activity-card">
+                    <h3>Recent Staff Activities</h3>
+                    <ul id="activity-list">
+                        <!-- Recent activities will be dynamically populated here -->
+                    </ul>
+                </div>
+                                
+            </div>
+            <div class="chart-card">
+                <h3>Number of Users</h3>
+                <canvas id="lineChart"></canvas>
+            </div>
+        </main>
+    </section>
+
+    <!-- Firebase Integration Script -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_VoT0W3zD6u5GVEa24dLcMkt3DJtnqYg",
+            authDomain: "tagalog-cuyonon-mobile-app.firebaseapp.com",
+            projectId: "tagalog-cuyonon-mobile-app",
+            storageBucket: "tagalog-cuyonon-mobile-app.appspot.com",
+            messagingSenderId: "598478516019",
+            appId: "1:598478516019:web:e680422657a9ebde305846"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Fetch and display user data
+async function fetchUserData() {
+    const querySnapshot = await db.collection('users').get();
+    let totalUsers = 0;
+    let activeUsersCount = 0;
+    let userList = document.getElementById('user-list');
+    let ageGroups = {
+        "18-25": 0,
+        "26-35": 0,
+        "36-45": 0,
+        "46-55": 0,
+        "56+": 0
+    };
+
+    userList.innerHTML = ''; // Clear the list before populating
+
+    querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        totalUsers++;
+
+        // Create list item for each user
+        createUserListItem(userData, userList);
+
+        // Count active users
+        if (userData.isActive) {
+            activeUsersCount++;
+        }
+
+        // Count age group
+        countAgeGroup(userData.age, ageGroups);
+    });
+
+    // Update the dashboard stats
+    updateDashboardStats(totalUsers, activeUsersCount);
+
+    // Update Doughnut Chart with age group data
+    updateAgeGroupChart(ageGroups);
+
+    // Update Bar Chart with language preference data
+    const languageCounts = await fetchMotherTongueData();
+    updateLanguageChart(languageCounts);
+}
+
+// Create a list item for a user
+function createUserListItem(userData, userList) {
+    const li = document.createElement('li');
+    li.innerHTML = `
+        <strong>Name:</strong> ${userData.firstname} ${userData.lastname} 
+        <strong>Email:</strong> ${userData.email} 
+        <strong>Gender:</strong> ${userData.gender}`;
+    userList.appendChild(li);
+}
+
+// Count age group
+function countAgeGroup(age, ageGroups) {
+    if (age >= 18 && age <= 25) {
+        ageGroups["18-25"]++;
+    } else if (age >= 26 && age <= 35) {
+        ageGroups["26-35"]++;
+    } else if (age >= 36 && age <= 45) {
+        ageGroups["36-45"]++;
+    } else if (age >= 46 && age <= 55) {
+        ageGroups["46-55"]++;
+    } else if (age >= 56) {
+        ageGroups["56+"]++;
+    }
+}
+
+// Update dashboard stats
+function updateDashboardStats(totalUsers, activeUsersCount) {
+    document.getElementById('total-users').innerText = totalUsers;
+    document.getElementById('active-users').innerText = activeUsersCount;
+}
+
+// Update Doughnut Chart with age group data
+function updateAgeGroupChart(ageGroups) {
+    const doughnutChartCtx = document.getElementById('doughnutChart').getContext('2d');
+    new Chart(doughnutChartCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(ageGroups),
+            datasets: [{
+                label: 'User Age Groups',
+                data: Object.values(ageGroups),
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF'
+                ],
+                hoverOffset: 4
+            }]
+        }
+    });
+}
+
+// Update Bar Chart with language preference data
+async function updateLanguageChart(languageCounts) {
+    const barChartCtx = document.getElementById('barChart').getContext('2d');
+    new Chart(barChartCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(languageCounts),
+            datasets: [{
+                label: 'Language Preference',
+                data: Object.values(languageCounts),
+                backgroundColor: '#36A2EB', // Bar color
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+}
+
+// Fetch mother tongue data
+async function fetchMotherTongueData() {
+    const usersSnapshot = await db.collection('users').get();
+    const languageCount = {};
+
+    usersSnapshot.forEach(doc => {
+        const user = doc.data();
+        const language = user.mother_tongue;
+        if (language) {
+            languageCount[language] = (languageCount[language] || 0) + 1;
+        }
+    });
+
+    return languageCount;
+}
+
+// Initialize the dashboard
+document.addEventListener('DOMContentLoaded', fetchUserData);
+
+    async function fetchMonthlyUsers() {
+    const usersSnapshot = await db.collection('users').get();
+    const monthlyUserCounts = {};
+
+    usersSnapshot.forEach(doc => {
+        const userData = doc.data();
+        const dateJoined = new Date(userData.date_joined); // Ensure date is a Date object
+
+        // Get the year and month
+        const yearMonth = `${dateJoined.getFullYear()}-${dateJoined.getMonth() + 1}`; // Format: YYYY-MM
+
+        // Count users per month
+        monthlyUserCounts[yearMonth] = (monthlyUserCounts[yearMonth] || 0) + 1;
+    });
+
+    return monthlyUserCounts;
+}
+// Function to fetch monthly user counts from Firestore
+async function fetchMonthlyUsers() {
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef.get();
+    const monthlyUserCounts = {};
+
+    snapshot.forEach(doc => {
+        const userData = doc.data();
+        const dateJoined = userData.date_joined.toDate(); // Convert Firestore timestamp to JS date
+
+        const month = dateJoined.getMonth() + 1; // Get month (0-11, so we add 1 to get 1-12)
+        const year = dateJoined.getFullYear(); // Get year
+
+        // Format month-year as YYYY-MM to make sorting easier
+        const monthYear = `${year}-${month.toString().padStart(2, '0')}`;
+
+        // Increment count for that month
+        if (monthlyUserCounts[monthYear]) {
+            monthlyUserCounts[monthYear]++;
+        } else {
+            monthlyUserCounts[monthYear] = 1;
+        }
+    });
+
+    return monthlyUserCounts;
+}
+// Function to setup the line chart
+async function setupLineChart() {
+    const monthlyUserCounts = await fetchMonthlyUsers();
+
+    // Sort by YYYY-MM format (key)
+    const labels = Object.keys(monthlyUserCounts).sort();
+
+    // Convert YYYY-MM back to a human-readable format (Month Year)
+    const readableLabels = labels.map(label => {
+        const [year, month] = label.split('-');
+        const date = new Date(year, month - 1); // Create date object
+        return date.toLocaleString('default', { month: 'long', year: 'numeric' }); // Format as 'Month Year'
+    });
+
+    const data = labels.map(label => monthlyUserCounts[label]); // Corresponding counts
+
+    const ctx = document.getElementById('lineChart').getContext('2d');
+    const lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: readableLabels, // Use human-readable labels
+            datasets: [{
+                label: 'Number of Users',
+                data: data,
+                borderColor: 'rgba(25, 118, 210, 1)', // Line color
+                backgroundColor: 'rgba(25, 118, 210, 0.2)', // Fill color
+                borderWidth: 2,
+                fill: true, // Fill area under the line
+            }],
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year: 2024', // Label for X-axis
+                    },
+                },
+                y: {
+                    beginAtZero: true, // Start Y-axis at zero
+                    title: {
+                        display: true,
+                        text: 'Number of Users', // Label for Y-axis
+                    },
+                },
+            },
+        },
+    });
+}
+// Call setupLineChart when the document is loaded
+document.addEventListener('DOMContentLoaded', setupLineChart);
+async function fetchRecentActivities() {
+    const querySnapshot = await db.collection('activities')
+        .orderBy('timestamp', 'desc') // Order by timestamp, descending
+        .limit(5) // Get the 5 most recent activities
+        .get();
+
+    let activityList = document.getElementById('activity-list');
+    activityList.innerHTML = ''; // Clear previous activities
+
+    querySnapshot.forEach(doc => {
+        const activityData = doc.data();
+        const listItem = document.createElement('li');
+        listItem.innerHTML = `
+            <strong>Action:</strong> ${activityData.action} <br>
+            <strong>By:</strong> ${activityData.addedBy} <br>
+            <strong>Location:</strong> ${activityData.location} <br>
+            <strong>Timestamp:</strong> ${activityData.timestamp.toDate().toLocaleString()}
+        `;
+        activityList.appendChild(listItem);
+    });
+}
+
+// Call fetchRecentActivities() when the page loads
+document.addEventListener('DOMContentLoaded', fetchRecentActivities);
+
+    </script>
+     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+     <script src="script.js"></script>
+</body>
+</html>
