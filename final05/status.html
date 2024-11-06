@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="status.css">
+    <title>Status</title>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<section id="sidebar">
+    <a href="#" class="brand"><img src="images/logo.png" width="70px" height="70px"> TAGA-CUYO</a>
+    <ul class="side-menu">
+        <li><a href="dashboard.html"><i class='bx bxs-dashboard icon'></i> Staff Dashboard</a></li>
+        <li><a href="create_content.html"><i class='bx bxs-layer icon'></i> Create Content</a></li>
+        <li><a href="lesson.html"><i class='bx bxs-book icon'></i> Lessons</a></li>
+        <li><a href="category.html"><i class='bx bxs-component icon'></i> Categories</a></li>
+        <li><a href="status.html" class="active"><i class='bx bxs-folder icon'></i> Status</a></li>
+        <li><a href="staff_login.html" id="logoutButton"><i class='bx bxs-log-out-circle'></i> Logout</a></li>
+    </ul>
+</section>
+<!-- SIDEBAR -->
+
+<!-- NAVBAR -->
+<section id="content">
+    <nav>
+        <div class="profile"></div>
+    </nav>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Date & Time Made</th>
+                <th>Status</th>
+                <th>Processed By</th>
+                <th>Details</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Content will be dynamically populated here -->
+        </tbody>
+    </table>
+</section>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";  // Import authentication module
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA_VoT0W3zD6u5GVEa24dLcMkt3DJtnqYg",
+        authDomain: "tagalog-cuyonon-mobile-app.firebaseapp.com",
+        projectId: "tagalog-cuyonon-mobile-app",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);  // Initialize Firebase Authentication
+
+    // Check if user is logged in
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log('User is signed in:', user);
+            user.getIdTokenResult().then((token) => {
+                console.log('User role:', token.claims.role);  // Check if role is set correctly
+            });
+        } else {
+            console.log('No user is signed in');
+        }
+    });
+    
+    // Approve content function
+    window.approveContent = async function(docId) {
+        const docRef = doc(db, 'activities', docId);
+        const docSnapshot = await getDoc(docRef);
+        const data = docSnapshot.data();
+
+        // Depending on the type of content (lesson or category), move it to the correct collection
+        if (data.location === 'lesson') {
+            const lessonRef = collection(db, 'lessons', data.lessonName, 'words');
+            await addDoc(lessonRef, {
+                word: data.word,
+                translated: data.translated,
+                options: data.options,
+                addedBy: data.addedBy,
+                timestamp: new Date(),
+            });
+        } else if (data.location === 'category') {
+            const categoryRef = collection(db, 'categories', data.categoryId, 'subcategories', data.subcategoryId, 'words');
+            await addDoc(categoryRef, {
+                word: data.word,
+                translated: data.translated,
+                options: data.options,
+                image_path: data.image_path,
+                addedBy: data.addedBy,
+                timestamp: new Date(),
+            });
+        }
+
+        // Once it's moved to the correct collection, update the 'isApprove' status in the 'activities' collection
+        await updateDoc(docRef, { isApprove: true });
+
+        // Re-load the content to reflect changes
+        loadPendingContent();
+    };
+
+    // Reject content function
+    window.rejectContent = async function(docId) {
+        const docRef = doc(db, 'activities', docId);
+        await deleteDoc(docRef);  // Remove the content from Firestore
+
+        // Re-load the content to reflect changes
+        loadPendingContent();
+    };
+
+    async function loadPendingContent() {
+        const activitiesSnapshot = await getDocs(collection(db, 'activities'));
+        const tableBody = document.querySelector('tbody');
+        tableBody.innerHTML = '';  // Clear the table before repopulating it
+
+        activitiesSnapshot.forEach((docSnapshot) => {
+            const data = docSnapshot.data();
+
+            // Log the fetched data to inspect its structure
+            console.log(data);
+
+            const row = document.createElement('tr');
+
+            // Check if content belongs to lesson or category, and dynamically display the appropriate details
+            const isLesson = data.location === 'lesson';  // Use 'location' instead of 'type'
+            const contentName = isLesson ? `Lesson: ${data.lessonName}` : `Category: ${data.categoryId}`;
+            
+            // Display content details based on lesson or category
+            let contentDetails = '';
+            
+            if (isLesson) {
+                // Lesson-specific details
+                contentDetails = `Word: ${data.word} <br>
+                    Translated: ${data.translated} <br>
+                    Options: ${data.options ? data.options.join(', ') : 'No options available'}`;
+            } else {
+                // Category-specific details
+                contentDetails = `Category: ${data.categoryId} <br>
+                    Subcategory: ${data.subcategoryId} <br>
+                    Word: ${data.word} <br>
+                    Translated: ${data.translated} <br>
+                    Options: ${data.options ? data.options.join(', ') : 'No options available'} <br>
+                    Image: <img src="${data.image_path || 'No image available'}" width="100">`;
+            }
+
+            // Add condition for displaying approve/accepted status
+            const status = data.isApprove ? 'Approved' : 'Pending';
+            const approveButton = !data.isApprove
+                ? `<button class="approve-btn" onclick="approveContent('${docSnapshot.id}')">Approve</button> 
+                   <button class="reject-btn" onclick="rejectContent('${docSnapshot.id}')">Reject</button>` 
+                : 'Accepted';
+
+            row.innerHTML = `
+                <td>${data.action}</td>
+                <td>${data.timestamp.toDate().toLocaleString()}</td>
+                <td class="status-${data.isApprove ? 'approved' : 'pending'}">${status}</td>
+                <td>${data.addedBy}</td>
+                <td>${contentDetails}</td>
+                <td>${approveButton}</td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadPendingContent);  // Load content when the page is ready
+
+</script>
+
+
+</body>
+</html>

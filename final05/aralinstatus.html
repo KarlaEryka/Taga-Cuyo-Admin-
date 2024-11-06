@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="learningfeature.css">
+    <title>Aralin Status</title>
+
+    <!-- Firebase App (compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore SDK (compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand"><img src="images/logo.png" width="70px" height="70px"> TAGA-CUYO</a>
+        <ul class="side-menu">
+            <li><a href="#" class=""><i class='bx bxs-dashboard icon'></i> Admin Dashboard</a></li>
+            <li class="divider" data-text="main">Main</li>
+            <li>
+                <a href="#"><i class='bx bxs-inbox icon'></i> User Management <i class='bx bx-chevron-right icon-right'></i></a>
+                <ul class="side-dropdown">
+                    <li><a href="user_management_user.html" class="active"><i class='mdi mdi-account icon'></i> List of Users</a></li>
+                    <li><a href="ManageStaff2.html"><i class='uil uil-users-alt icon'></i> Manage Staff</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class='bx bxs-graduation icon'></i> Learning Feature Status <i class='bx bx-chevron-right icon-right'></i></a>
+                <ul class="side-dropdown">
+                    <li><a href="feedback2.html" class="active"><i class='bx bxs-book icon'></i>Aralin Status</a></li>
+                    <li><a href="user_support.html"><i class='bx bxs-category icon'></i>Kategorya Status</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#"><i class='bx bxs-comment icon'></i> Support and Feedback <i class='bx bx-chevron-right icon-right'></i></a>
+                <ul class="side-dropdown">
+                    <li><a href="feedback2.html" class="active"><i class='bx bxs-message-rounded'></i>User Feedback</a></li>
+                    <li><a href="user_support.html"><i class='uil uil-headphones-alt'></i>User Support</a></li>
+                </ul>
+            </li>
+            <li><a href="terms_and_condition.html"><i class='bx bxs-file icon'></i> Terms and Condition</a></li>
+            <li><a href="settings2.html"><i class='bx bxs-cog icon'></i> Settings</a></li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- NAVBAR -->
+    <section id="content">
+        <nav>
+            <i class='bx bx-menu toggle-sidebar'></i>
+            <form id="searchForm">
+                <div class="form-group">
+                    <input type="text" id="searchInput" placeholder="Search...">
+                    <i class='bx bx-search icon'></i>
+                </div>
+            </form>
+            <div class="profile">
+                <div class="notification-icon" onclick="toggleNotificationDropdown()">
+                    <i class='bx bxs-bell'></i>
+                    <span id="notificationCounter" class="notification-counter">0</span>
+                </div>
+                <div id="notificationDropdown" class="notification-dropdown hidden">
+                    <h4>Notifications</h4>
+                    <ul id="notificationList">
+                        <!-- Notifications will be populated here -->
+                    </ul>
+                </div>
+                <img src="images/logo.png" alt="Profile Image">
+                <ul class="profile-link">
+                    <li><a href="/settings2.html"><i class='bx bxs-cog'></i> Settings</a></li>
+                    <li><a href="login2.html"><i class='bx bxs-log-out-circle'></i> Logout</a></li>
+                </ul>
+            </div>
+            
+        </nav>
+        <main>
+            table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Date & Time Made</th>
+                <th>Status</th>
+                <th>Processed By</th>
+                <th>Details</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Content will be dynamically populated here -->
+        </tbody>
+    </table>
+</section>
+    
+        </main>
+    </section>
+    <script>
+        // Search functionality
+document.getElementById('searchForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent form submission
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    searchUsers(searchTerm);
+});
+
+// Function to search users
+async function searchUsers(term) {
+    const querySnapshot = await db.collection('users').get();
+    const userList = document.getElementById('user-list');
+    userList.innerHTML = ''; // Clear the list before displaying search results
+
+    querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        // Check if the user's name or email includes the search term
+        if (
+            userData.firstname.toLowerCase().includes(term) || 
+            userData.lastname.toLowerCase().includes(term) || 
+            userData.email.toLowerCase().includes(term)
+        ) {
+            createUserListItem(userData, userList);
+        }
+    });
+}
+    </script>
+    <!-- Firebase Integration Script -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+                apiKey: "AIzaSyA_VoT0W3zD6u5GVEa24dLcMkt3DJtnqYg",
+                authDomain: "tagalog-cuyonon-mobile-app.firebaseapp.com",
+                projectId: "tagalog-cuyonon-mobile-app",
+                storageBucket: "tagalog-cuyonon-mobile-app.appspot.com",
+                messagingSenderId: "598478516019",
+                appId: "1:598478516019:web:e680422657a9ebde305846"
+            };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const location = doc.data().location;
+
+//notification
+// Function to toggle notification dropdown visibility
+function toggleNotificationDropdown() {
+    const dropdown = document.getElementById("notificationDropdown");
+    dropdown.classList.toggle("show");
+    
+    // Reset the notification counter to 0 when the dropdown is opened
+    if (dropdown.classList.contains("show")) {
+        const notificationCounter = document.getElementById("notificationCounter");
+        notificationCounter.innerText = '0';  // Reset to 0 when the dropdown is opened
+    }
+}
+
+// Function to create notifications and add to dropdown
+function createNotification(activity) {
+    const notificationMessage = `${activity.action} by ${activity.addedBy} in ${activity.location}`;
+    
+    // Create a new list item for the notification
+    const notificationItem = document.createElement("li");
+
+    // Check if the activity is approved and append it to the notification item
+    const approvalStatus = activity.isApprove ? "<strong>Status:</strong> Approved" : "<strong>Status:</strong> Pending";
+
+    notificationItem.innerHTML = ` 
+        <strong>By:</strong> ${activity.addedBy} <br> 
+        <strong>Location:</strong> ${activity.location} <br> 
+        <strong>Action:</strong> ${activity.action} <br> 
+        <strong>Timestamp:</strong> ${new Date(activity.timestamp.toDate()).toLocaleString()} <br> 
+        ${approvalStatus} <br>  <!-- Display the approval status -->
+    `;
+    
+    // Add click event listener to the notification item
+    notificationItem.addEventListener('click', function() {
+        // Toggle the 'selected-notification' class when clicked
+        notificationItem.classList.toggle('selected-notification');
+        
+        // Optionally, you can remove the class from all other notifications if you want only one to be selected at a time
+        const allNotifications = document.querySelectorAll("#notificationList li");
+        allNotifications.forEach(item => {
+            if (item !== notificationItem) {
+                item.classList.remove('selected-notification');
+            }
+        });
+    });
+
+    // Append the new notification to the notification list in the dropdown
+    const notificationList = document.getElementById("notificationList");
+    notificationList.prepend(notificationItem); // Prepend to show the latest at the top
+    
+    // Update the notification counter
+    const notificationCounter = document.getElementById("notificationCounter");
+    let currentCount = parseInt(notificationCounter.innerText, 10) || 0;
+    notificationCounter.innerText = currentCount + 1; // Increment the count
+}
+
+// Listen to the `activities` collection for real-time updates
+db.collection("activities").onSnapshot((snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+            // Trigger notification for new activities
+            createNotification(change.doc.data());
+        }
+    });
+
+    // Close the dropdown if the user clicks outside of it
+    document.addEventListener("click", function(event) {
+        const dropdown = document.getElementById("notificationDropdown");
+        const bellIcon = document.querySelector(".notification-icon");
+        
+        if (!dropdown.contains(event.target) && !bellIcon.contains(event.target)) {
+            dropdown.classList.remove("show");
+        }
+    });
+});
+
+// Add a click listener for the notification bell to reset the count when clicked
+document.querySelector(".notification-icon").addEventListener("click", function() {
+    // When the bell icon is clicked, reset the notification count to zero
+    const notificationCounter = document.getElementById("notificationCounter");
+    notificationCounter.innerText = '0'; // Reset the count to 0
+});
+const auth = getAuth(app);  // Initialize Firebase Authentication
+
+    // Check if user is logged in
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log('User is signed in:', user);
+            user.getIdTokenResult().then((token) => {
+                console.log('User role:', token.claims.role);  // Check if role is set correctly
+            });
+        } else {
+            console.log('No user is signed in');
+        }
+    });
+    
+    // Approve content function
+    window.approveContent = async function(docId) {
+        const docRef = doc(db, 'activities', docId);
+        const docSnapshot = await getDoc(docRef);
+        const data = docSnapshot.data();
+
+        // Depending on the type of content (lesson or category), move it to the correct collection
+        if (data.location === 'lesson') {
+            const lessonRef = collection(db, 'lessons', data.lessonName, 'words');
+            await addDoc(lessonRef, {
+                word: data.word,
+                translated: data.translated,
+                options: data.options,
+                addedBy: data.addedBy,
+                timestamp: new Date(),
+            });
+        } else if (data.location === 'category') {
+            const categoryRef = collection(db, 'categories', data.categoryId, 'subcategories', data.subcategoryId, 'words');
+            await addDoc(categoryRef, {
+                word: data.word,
+                translated: data.translated,
+                options: data.options,
+                image_path: data.image_path,
+                addedBy: data.addedBy,
+                timestamp: new Date(),
+            });
+        }
+
+        // Once it's moved to the correct collection, update the 'isApprove' status in the 'activities' collection
+        await updateDoc(docRef, { isApprove: true });
+
+        // Re-load the content to reflect changes
+        loadPendingContent();
+    };
+
+    // Reject content function
+    window.rejectContent = async function(docId) {
+        const docRef = doc(db, 'activities', docId);
+        await deleteDoc(docRef);  // Remove the content from Firestore
+
+        // Re-load the content to reflect changes
+        loadPendingContent();
+    };
+
+    async function loadPendingContent() {
+        const activitiesSnapshot = await getDocs(collection(db, 'activities'));
+        const tableBody = document.querySelector('tbody');
+        tableBody.innerHTML = '';  // Clear the table before repopulating it
+
+        activitiesSnapshot.forEach((docSnapshot) => {
+            const data = docSnapshot.data();
+
+            // Log the fetched data to inspect its structure
+            console.log(data);
+
+            const row = document.createElement('tr');
+
+            // Check if content belongs to lesson or category, and dynamically display the appropriate details
+            const isLesson = data.location === 'lesson';  // Use 'location' instead of 'type'
+            const contentName = isLesson ? `Lesson: ${data.lessonName}` : `Category: ${data.categoryId}`;
+            
+            // Display content details based on lesson or category
+            let contentDetails = '';
+            
+            if (isLesson) {
+                // Lesson-specific details
+                contentDetails = `Word: ${data.word} <br>
+                    Translated: ${data.translated} <br>
+                    Options: ${data.options ? data.options.join(', ') : 'No options available'}`;
+            } else {
+                // Category-specific details
+                contentDetails = `Category: ${data.categoryId} <br>
+                    Subcategory: ${data.subcategoryId} <br>
+                    Word: ${data.word} <br>
+                    Translated: ${data.translated} <br>
+                    Options: ${data.options ? data.options.join(', ') : 'No options available'} <br>
+                    Image: <img src="${data.image_path || 'No image available'}" width="100">`;
+            }
+
+            // Add condition for displaying approve/accepted status
+            const status = data.isApprove ? 'Approved' : 'Pending';
+            const approveButton = !data.isApprove
+                ? `<button class="approve-btn" onclick="approveContent('${docSnapshot.id}')">Approve</button> 
+                   <button class="reject-btn" onclick="rejectContent('${docSnapshot.id}')">Reject</button>` 
+                : 'Accepted';
+
+            row.innerHTML = `
+                <td>${data.action}</td>
+                <td>${data.timestamp.toDate().toLocaleString()}</td>
+                <td class="status-${data.isApprove ? 'approved' : 'pending'}">${status}</td>
+                <td>${data.addedBy}</td>
+                <td>${contentDetails}</td>
+                <td>${approveButton}</td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadPendingContent);  // Load content when the page is ready
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
