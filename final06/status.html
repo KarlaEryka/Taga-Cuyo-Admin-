@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="status.css">
+    <title>Status</title>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<section id="sidebar">
+    <a href="#" class="brand"><img src="images/logo.png" width="70px" height="70px"> TAGA-CUYO</a>
+    <ul class="side-menu">
+        <li><a href="dashboard.html"><i class='bx bxs-dashboard icon'></i> Staff Dashboard</a></li>
+        <li><a href="create_content.html"><i class='bx bxs-layer icon'></i> Create Content</a></li>
+        <li><a href="lesson.html"><i class='bx bxs-book icon'></i> Lessons</a></li>
+        <li><a href="category.html"><i class='bx bxs-component icon'></i> Categories</a></li>
+        <li><a href="status.html" class="active"><i class='bx bxs-folder icon'></i> Status</a></li>
+        <li><a href="staff_login.html" id="logoutButton"><i class='bx bxs-log-out-circle'></i> Logout</a></li>
+    </ul>
+</section>
+<!-- SIDEBAR -->
+
+<!-- NAVBAR -->
+<section id="content">
+    <nav>
+        <div class="profile"></div>
+    </nav>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Date & Time Made</th>
+                <th>Status</th>
+                <th>Processed By</th>
+                <th>Details</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Content will be dynamically populated here -->
+        </tbody>
+    </table>
+</section>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";  // Import authentication module
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA_VoT0W3zD6u5GVEa24dLcMkt3DJtnqYg",
+        authDomain: "tagalog-cuyonon-mobile-app.firebaseapp.com",
+        projectId: "tagalog-cuyonon-mobile-app",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);  // Initialize Firebase Authentication
+
+    // Check if user is logged in
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log('User is signed in:', user);
+            user.getIdTokenResult().then((token) => {
+                console.log('User role:', token.claims.role);  // Check if role is set correctly
+            });
+        } else {
+            console.log('No user is signed in');
+        }
+    });
+    
+    
+window.approveContent = async function(docId) {
+    const docRef = doc(db, 'activities', docId);
+    const docSnapshot = await getDoc(docRef);
+
+    if (!docSnapshot.exists()) {
+        console.error("No such document! Unable to update.");
+        return;
+    }
+
+    const data = docSnapshot.data();
+    if (data.location === 'lesson' && data.lessonId) {
+        const lessonDocRef = doc(db, 'lessons', data.lessonId);
+        const lessonDocSnapshot = await getDoc(lessonDocRef);
+
+        if (lessonDocSnapshot.exists()) {
+            const lessonData = lessonDocSnapshot.data();
+            const lesson_name = lessonData.lesson_name || 'N/A';
+
+            const wordsSubcollectionRef = collection(lessonDocRef, 'words');
+            await addDoc(wordsSubcollectionRef, {
+                word: data.word,
+                translated: data.translated,
+                options: data.options ? data.options : [],
+                addedBy: data.addedBy,
+                timestamp: new Date(),
+            });
+
+            if (lesson_name !== 'N/A') {
+                await updateDoc(lessonDocRef, {
+                    lesson_name: lesson_name,
+                    isApproved: true,
+                    lastUpdated: new Date()
+                });
+            }
+
+            await updateDoc(docRef, { 
+                isApprove: true, 
+                action: 'added'  // Update action to 'added'
+            });
+
+            // Update the Action Made column in the table for the current row
+            const row = document.querySelector(`tr[data-doc-id="${docId}"]`);
+            if (row) {
+                row.querySelector('td:nth-child(4)').innerText = 'added';  // Action Made column (4th column)
+            }
+
+            loadPendingContent();  // Reload content after approval
+        }
+    }
+};
+
+window.rejectContent = async function(docId) {
+    const docRef = doc(db, 'activities', docId);
+    const docSnapshot = await getDoc(docRef);
+
+    if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        if (data.location === 'lesson' && data.lessonId) {
+            const lessonDocRef = doc(db, 'lessons', data.lessonId);
+            const lessonDocSnapshot = await getDoc(lessonDocRef);
+
+            if (lessonDocSnapshot.exists()) {
+                const wordsCollectionRef = collection(lessonDocRef, 'words');
+                const wordSnapshot = await getDocs(wordsCollectionRef);
+
+                wordSnapshot.forEach(async (wordDoc) => {
+                    const wordData = wordDoc.data();
+                    if (wordData.word === data.word) {
+                        await deleteDoc(wordDoc.ref);
+                        console.log(`Deleted word: ${data.word}`);
+                    }
+                });
+            }
+        }
+
+        await deleteDoc(docRef);
+        console.log(`Deleted activity document with ID: ${docId}`);
+
+        // Update the Action Made column in the table for the current row
+        const row = document.querySelector(`tr[data-doc-id="${docId}"]`);
+        if (row) {
+            row.querySelector('td:nth-child(4)').innerText = 'deleted';  // Action Made column (4th column)
+            row.querySelector('td:nth-child(6)').innerText = 'Rejected'; // Status column (6th column)
+            row.classList.add('deleted');  // Mark the row as deleted but keep it in the table
+         
+        }
+
+        loadPendingContent();  // Reload content after rejection
+    }
+};
+
+  // Function to dismiss content and store the docId in localStorage
+window.dismissContent = function(docId) {
+    console.log("Action dismissed. No changes made to the database.");
+    
+    // Save the docId of dismissed content to localStorage
+    let dismissedContent = JSON.parse(localStorage.getItem('dismissedContent')) || [];
+    dismissedContent.push(docId);
+    localStorage.setItem('dismissedContent', JSON.stringify(dismissedContent));
+    
+    // Find the row by docId and update the Action column
+    const row = document.querySelector(`tr[data-doc-id="${docId}"]`);
+    if (row) {
+        // Replace the action buttons with the text "Dismissed"
+        const actionCell = row.querySelector('td:last-child');  // Action column is the last one
+        actionCell.innerHTML = 'Dismissed';
+        
+        // Optionally, add a 'blocked' class to the row for styling
+        row.classList.add('blocked');
+        
+        // Display a message indicating the item has been dismissed
+        alert('It has been dismissed and removed');
+        
+        // Remove the row from the table after showing the message
+        row.remove();
+    }
+};
+    async function loadPendingContent() {
+        const activitiesSnapshot = await getDocs(collection(db, 'activities'));
+        const tableBody = document.querySelector('tbody');
+        tableBody.innerHTML = '';  // Clear the table before repopulating it
+
+        activitiesSnapshot.forEach((docSnapshot) => {
+            const data = docSnapshot.data();
+
+            // Log the fetched data to inspect its structure
+            console.log(data);
+
+            const row = document.createElement('tr');
+
+            // Check if content belongs to lesson or category, and dynamically display the appropriate details
+            const isLesson = data.location === 'lesson';  // Use 'location' instead of 'type'
+            const contentName = isLesson ? `Lesson: ${data.lessonName}` : `Category: ${data.categoryId}`;
+            
+            // Display content details based on lesson or category
+            let contentDetails = '';
+            
+            if (isLesson) {
+                // Lesson-specific details
+                contentDetails = `Word: ${data.word} <br>
+                    Translated: ${data.translated} <br>
+                    Options: ${data.options ? data.options.join(', ') : 'No options available'}`;
+            } else {
+                // Category-specific details
+                contentDetails = `Category: ${data.categoryId} <br>
+                    Subcategory: ${data.subcategoryId} <br>
+                    Word: ${data.word} <br>
+                    Translated: ${data.translated} <br>
+                    Options: ${data.options ? data.options.join(', ') : 'No options available'} <br>
+                    Image: <img src="${data.image_path || 'No image available'}" width="100">`;
+            }
+
+            // Add condition for displaying approve/accepted status
+            const status = data.isApprove ? 'Approved' : 'Pending';
+            const approveButton = !data.isApprove
+                ? `<button class="approve-btn" onclick="approveContent('${docSnapshot.id}')">Approve</button> 
+                   <button class="reject-btn" onclick="rejectContent('${docSnapshot.id}')">Reject</button>` 
+                : 'Accepted';
+
+            row.innerHTML = `
+                <td>${data.action}</td>
+                <td>${data.timestamp.toDate().toLocaleString()}</td>
+                <td class="status-${data.isApprove ? 'approved' : 'pending'}">${status}</td>
+                <td>${data.addedBy}</td>
+                <td>${contentDetails}</td>
+                <td>${approveButton}</td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadPendingContent);  // Load content when the page is ready
+
+</script>
+
+
+</body>
+</html>
